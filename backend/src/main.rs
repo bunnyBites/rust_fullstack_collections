@@ -1,31 +1,23 @@
-use axum::Router;
-use dotenvy::dotenv;
-use reqwest::{Client, Method, header};
-use tower_http::cors::{Any, CorsLayer};
+use std::net::SocketAddr;
+
+use axum::{Router, routing::get};
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    let app = Router::new().route("/", get(root_handler));
 
-    // create a shared reqwest client
-    let http_client = Client::new();
+    let addr_str = "0.0.0.0:3000";
 
-    // Define CORS layer
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
-        .allow_headers(vec![header::CONTENT_TYPE, header::AUTHORIZATION]);
+    let addr: SocketAddr = addr_str
+        .parse()
+        .expect("Listnening to provided Port is failed");
 
-    // Build application routes
-    let app = Router::new()
-        // .route("/api/chat", post(<post_method>))
-        .with_state(http_client)
-        .layer(cors);
+    println!("App is listening at http:/{}", addr_str);
 
-    // create app listening address
-    let addr = format!("0.0.0.0:{}", 3000); // can change 3000 to dynamic value
-
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
+}
+
+async fn root_handler() -> &'static str {
+    "Hello World !!"
 }
