@@ -1,10 +1,26 @@
 use std::net::SocketAddr;
 
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, post},
+};
+
+// import dotenv function
+use dotenvy::dotenv;
+use handler::{chat_request, root_handler};
+
+mod handler;
+mod model;
+mod openai_api;
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/", get(root_handler));
+    // load the environment files
+    // ok is added to ignore if there are any error in fetching env file
+    dotenv().ok();
+    let app = Router::new()
+        .route("/", get(root_handler))
+        .route("/api/chat", post(chat_request));
 
     let addr_str = "0.0.0.0:3000";
 
@@ -16,8 +32,4 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn root_handler() -> &'static str {
-    "Hello World !!"
 }
