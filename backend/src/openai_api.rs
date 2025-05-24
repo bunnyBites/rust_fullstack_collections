@@ -11,7 +11,7 @@ pub async fn ask_openai(prompt: &str, api_key: &str) -> (StatusCode, Json<ApiRes
 
     let openai_payload = OpenAiPayload {
         model: "gpt-4.1-nano",
-        temperature: 0.3,
+        temperature: 0.5,
         messages: vec![
             OpenAiMessage {
                 role: "assistant",
