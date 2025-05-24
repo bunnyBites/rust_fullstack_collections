@@ -1,7 +1,7 @@
 use axum::Json;
 use reqwest::{Client, StatusCode};
 
-use crate::model::{ApiResponse, OpenAiMessage, OpenAiPayload};
+use crate::model::{ApiResponse, OpenAiMessage, OpenAiPayload, OpenAiResponse};
 
 pub async fn ask_openai(prompt: &str, api_key: &str) -> (StatusCode, Json<ApiResponse>) {
     // create a reqwest client for communicating with openai
@@ -31,19 +31,34 @@ pub async fn ask_openai(prompt: &str, api_key: &str) -> (StatusCode, Json<ApiRes
         .send()
         .await
     {
-        Ok(response) => match response.text().await {
-            Ok(response_text) => (
-                StatusCode::OK,
-                Json(ApiResponse {
-                    response: response_text,
-                }),
-            ),
-            Err(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiResponse {
-                    response: "Failed to read response text".to_string(),
-                }),
-            ),
+        Ok(response) => match response.json::<OpenAiResponse>().await {
+            Ok(response_json) => {
+                if let Some(choice) = response_json.choices.get(0) {
+                    return (
+                        StatusCode::OK,
+                        Json(ApiResponse {
+                            response: choice.message.content.to_string(),
+                        }),
+                    );
+                } else {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(ApiResponse {
+                            response: "Failed to get proper response from openai".to_string(),
+                        }),
+                    );
+                }
+            }
+            Err(err) => {
+                eprintln!("{}", err);
+
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiResponse {
+                        response: "Failed to read response text".to_string(),
+                    }),
+                );
+            }
         },
         Err(_err) => {
             eprintln!("Failed to communicate with openai");

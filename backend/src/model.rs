@@ -16,6 +16,8 @@ pub struct ApiResponse {
     pub response: String,
 }
 
+// <<<<---- Open AI ---->>>>
+
 #[derive(Serialize)]
 pub struct OpenAiMessage<'a> {
     pub role: &'a str,
@@ -27,4 +29,19 @@ pub struct OpenAiPayload<'a> {
     pub model: &'a str,
     pub temperature: f32,
     pub messages: Vec<OpenAiMessage<'a>>,
+}
+
+#[derive(Deserialize)]
+pub struct OpenAiResponseMessage {
+    pub content: String,
+}
+
+#[derive(Deserialize)]
+pub struct OpenAiChoice {
+    pub message: OpenAiResponseMessage,
+}
+
+#[derive(Deserialize)]
+pub struct OpenAiResponse {
+    pub choices: Vec<OpenAiChoice>,
 }
