@@ -8,6 +8,8 @@ use axum::{
 // import dotenv function
 use dotenvy::dotenv;
 use handler::{chat_request, root_handler};
+use reqwest::{Method, header};
+use tower_http::cors::{Any, CorsLayer};
 
 mod handler;
 mod model;
@@ -18,9 +20,17 @@ async fn main() {
     // load the environment files
     // ok is added to ignore if there are any error in fetching env file
     dotenv().ok();
+
+    // add cors layer
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_headers(vec![header::CONTENT_TYPE])
+        .allow_methods(vec![Method::GET, Method::POST]);
+
     let app = Router::new()
         .route("/", get(root_handler))
-        .route("/api/chat", post(chat_request));
+        .route("/api/chat", post(chat_request))
+        .layer(cors);
 
     let addr_str = "0.0.0.0:3000";
 
