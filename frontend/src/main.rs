@@ -2,9 +2,23 @@
 #![allow(non_snake_case)]
 
 use dioxus::prelude::*;
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 
 fn main() {
     launch(App);
+}
+
+const BACKEND_URL: &str = "http://localhost:3000/api/chat";
+
+#[derive(Serialize)]
+pub struct AiPromptPayload {
+    prompt: String,
+}
+
+#[derive(Deserialize)]
+pub struct AiPromptResponse {
+    response: String,
 }
 
 // Our main application component
@@ -15,13 +29,43 @@ fn App() -> Element {
     // We start with an empty String.
     let mut prompt = use_signal(String::new);
 
-    // A signal to hold the latest response from our AI backend.
-    // We start with a placeholder message.
-    let ai_response = use_signal(|| "The AI's response will appear here...".to_string());
-
     // A signal to track if we are currently waiting for a response.
     // This will be used to disable the input and button during a request.
-    let is_loading = use_signal(|| false);
+    let mut is_loading = use_signal(|| false);
+
+    let mut fetched_ai_response = use_resource(move || async move {
+        if prompt.peek().is_empty() {
+            return Ok("".to_string());
+        }
+
+        is_loading.set(true);
+
+        let client = Client::new();
+
+        let payload = AiPromptPayload {
+            prompt: prompt.peek().clone(),
+        };
+
+        let result = match client.post(BACKEND_URL).json(&payload).send().await {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    let api_response: AiPromptResponse = resp.json().await.unwrap();
+                    Ok(api_response.response)
+                } else {
+                    let resp_text = resp
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown Error".to_string());
+
+                    Err(format!("Failed to fetch response: {}", resp_text))
+                }
+            }
+            Err(err) => Err(format!("Request Failed !!{}", err)),
+        };
+
+        is_loading.set(false);
+        result
+    });
 
     // --- UI Rendering ---
     rsx! {
@@ -53,18 +97,15 @@ fn App() -> Element {
                     white-space: pre-wrap; // To respect newlines in the response
                 ",
                 // The text of this paragraph is directly tied to our `ai_response` signal.
-                "{ai_response}"
+                match fetched_ai_response.read().as_ref() {
+                  Some(Ok(text)) if !text.is_empty() => format!("{}", text),
+                  Some(Err(err)) => format!("Error: {}", err),
+                    _ => "The AI response will be shown here".to_string(),
+                }
             }
 
             // A form to contain our input and button
             form {
-                // We prevent the default form submission behavior (which reloads the page)
-                // using the onsubmit event handler.
-                onsubmit: move |event| {
-                    // TODO: Trigger the AI request here
-                    event.prevent_default();
-                    println!("Form submitted with prompt: {}", prompt.read());
-                },
                 style: "width: 100%; display: flex; gap: 0.5rem;",
                 // The text input field
                 input {
@@ -73,18 +114,27 @@ fn App() -> Element {
                     placeholder: "Enter your prompt...",
                     disabled: is_loading(), // Disable the input when loading
                     style: "flex-grow: 1; padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;",
+                    onkeydown: move |event| {
+                      if event.key() == Key::Enter && !is_loading() {
+                          fetched_ai_response.restart();
+                      }
+                    },
                     // The `oninput` event fires every time the user types.
                     oninput: move |event| {
-                        // We `set` the signal's value to the new input value.
-                        // This updates our state.
-                        prompt.set(event.value());
+                      // We `set` the signal's value to the new input value.
+                      // This updates our state.
+                      prompt.set(event.value());
                     }
                 }
                 // The submit button
                 button {
-                    r#type: "submit", // Make it a submit button for the form
+                    r#type: "button", // Make it a submit button for the form
                     disabled: is_loading(), // Disable the button when loading
                     style: "padding: 0.5rem 1rem; border-radius: 5px; border: none; background-color: #007bff; color: white; cursor: pointer;",
+                    onclick: move |e| {
+                      e.prevent_default();
+                      fetched_ai_response.restart();
+                    },
                     if is_loading() { "Thinking..." } else { "Ask" }
                 }
             }
