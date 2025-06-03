@@ -9,12 +9,12 @@ describe("blockchain", () => {
   const program = anchor.workspace.blockchain as Program<Blockchain>;
   const user = anchor.getProvider().wallet;
 
-  it("Is initialized!", async () => {
-    const [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("list"), user.publicKey.toBuffer()],
-      program.programId
-    );
+  const [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("list"), user.publicKey.toBuffer()],
+    program.programId
+  );
 
+  it("Is initialized!", async () => {
     const tx = await program.methods
       .initialize()
       .accounts({
@@ -30,5 +30,37 @@ describe("blockchain", () => {
 
     // const todosPDA = await anchor.web3.PublicKey
     console.log("Your transaction signature", tx);
+  });
+
+  it("Is Updated", async () => {
+    const updateSignature = await program.methods
+      .addTask("Hello World")
+      .accounts({
+        user: user.publicKey,
+        todo: todoPDA,
+      })
+      .rpc();
+
+    console.log("Update Signature: ", updateSignature);
+
+    const todoAccount = await program.account.todo.fetch(todoPDA);
+
+    console.log("Updated todo account: ", todoAccount);
+  });
+
+  it("Is Toggle State", async () => {
+    const toggleSignature = await program.methods
+      .toggleState(0)
+      .accounts({
+        user: user.publicKey,
+        todo: todoPDA,
+      })
+      .rpc();
+
+    console.log("toggle signature: ", toggleSignature);
+
+    const todo = await program.account.todo.fetch(todoPDA);
+
+    console.log("updated todo account: ", todo);
   });
 });
