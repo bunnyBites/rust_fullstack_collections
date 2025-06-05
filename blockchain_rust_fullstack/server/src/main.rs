@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use axum::{Router, routing::get};
-use handler::get_todos;
 use solana_client::rpc_client::RpcClient;
 
+use crate::handler::get_todos;
+
+mod error;
 mod handler;
 mod model;
 
@@ -11,22 +13,20 @@ const SOLANA_BASE_URL: &str = "http://127.0.0.1:8899";
 
 #[tokio::main]
 async fn main() {
-    // prepare client
+    // create Rpc client
     let rpc_client = Arc::new(RpcClient::new(SOLANA_BASE_URL));
 
-    // prepare listening port
-    let listener_port = "0.0.0.0:3000".to_string();
-
-    // prepare app with routes and states
+    // create routes with rpc clien
     let app = Router::new()
-        .route("/sol/:user_public_key", get(get_todos))
+        .route("/sol/{user_pubkey}", get(get_todos))
         .with_state(rpc_client);
 
-    // connect with TCP and prepare listner
-    let listener = tokio::net::TcpListener::bind(&listener_port).await.unwrap();
+    // prepare listener
+    let listener_port = "0.0.0.0:3000";
+    let listener = tokio::net::TcpListener::bind(listener_port).await.unwrap();
 
-    println!("Listening on: http:/{}", listener_port);
+    println!("Server is running on http:/{}", listener_port);
 
-    // serve the app on the listner
+    // serve the app
     axum::serve(listener, app).await.unwrap();
 }

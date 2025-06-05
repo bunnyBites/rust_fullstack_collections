@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-blockchain = "4sXU7Z9U3N1TFWiTU9ZZ9R5XAoiL633JGsQfCFKdTYQF"
+blockchain = "AUEPaukkyUiQVu5YFb76mJU9yfzXzi78qrKQnbK8H3c1"
 
 [registry]
 url = "https://api.apr.dev"

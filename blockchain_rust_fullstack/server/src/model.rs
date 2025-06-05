@@ -1,15 +1,15 @@
-use anchor_lang::{AnchorDeserialize, prelude::Pubkey, prelude::borsh};
+use anchor_lang::prelude::{AnchorDeserialize, Pubkey, borsh};
 use serde::Serialize;
 
-#[derive(Clone, Debug, AnchorDeserialize, Serialize)]
-pub struct Todo {
-    content: String,
-    is_completed: bool,
-}
-
-#[derive(AnchorDeserialize, Serialize, Clone, Debug)]
+#[derive(AnchorDeserialize, Serialize, Debug, Clone)]
 pub struct Task {
     pub user: Pubkey,
     pub bump: u8,
     pub todos: Vec<Todo>,
+}
+
+#[derive(AnchorDeserialize, Serialize, Debug, Clone)]
+pub struct Todo {
+    pub content: String,
+    pub is_completed: bool,
 }

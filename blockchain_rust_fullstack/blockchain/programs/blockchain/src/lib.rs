@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("4sXU7Z9U3N1TFWiTU9ZZ9R5XAoiL633JGsQfCFKdTYQF");
+declare_id!("AUEPaukkyUiQVu5YFb76mJU9yfzXzi78qrKQnbK8H3c1");
 
 const MAX_LIST_SIZE: usize = 10;
 const MAX_LIST_CONTENT_LENGTH: usize = 200;
@@ -98,15 +98,15 @@ pub struct ToggleState<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct TodoList {
-    content: String,
+    pub content: String,
     pub is_completed: bool,
 }
 
 #[account]
 pub struct Todo {
-    user: Pubkey,
-    bump: u8,
-    todos: Vec<TodoList>,
+    pub user: Pubkey,
+    pub bump: u8,
+    pub todos: Vec<TodoList>,
 }
 
 #[error_code]
