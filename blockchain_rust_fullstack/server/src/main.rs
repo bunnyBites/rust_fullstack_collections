@@ -5,7 +5,6 @@ use solana_client::rpc_client::RpcClient;
 
 use crate::handler::get_todos;
 
-mod error;
 mod handler;
 mod model;
 
