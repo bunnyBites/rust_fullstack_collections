@@ -1,6 +1,9 @@
 use dioxus::prelude::*;
 
+use crate::components::todo_container::TodoContainer;
+
 const FAVICON: Asset = asset!("/assets/favicon.ico");
+mod components;
 
 fn main() {
     dioxus::launch(App);
@@ -11,7 +14,6 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         Hero {}
-
     }
 }
 
@@ -35,26 +37,6 @@ pub fn Hero() -> Element {
               ".loading-message, .no-tasks-message {{ text-align: center; color: #777; margin-top: 20px; }}"
           }
 
-          div { class: "container",
-              h1 { "Solana To-Do List Viewer" }
-              p { "Enter a Solana public key to view the associated to-do list from the backend." }
-
-              div { class: "input-group",
-                  // Input field for the public key
-                  // You'll bind this to your `user_pubkey` signal's `oninput` handler
-                  input {
-                      r#type: "text", // Use r# to escape keyword "type"
-                      placeholder: "Enter Solana Public Key",
-                      // value: "{user_pubkey}", // Example: How you'd bind value
-                      // oninput: move |event| user_pubkey.set(event.value()), // Example: How you'd handle input
-                  }
-                  // Button to trigger the fetch operation
-                  // You'll bind this to your fetch logic in the `onclick` handler
-                  button {
-                      // onclick: move |_| { /* your async fetch logic here */ },
-                      "Fetch To-Dos"
-                  }
-              }
-          }
+          TodoContainer {  }
     }
 }
