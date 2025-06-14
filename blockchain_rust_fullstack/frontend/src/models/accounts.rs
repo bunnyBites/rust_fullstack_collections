@@ -2,13 +2,13 @@ use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Task {
-    user: String,
-    bump: u8,
-    todos: Vec<Todo>,
+    pub user: String,
+    pub bump: u8,
+    pub todos: Vec<Todo>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Todo {
-    content: String,
-    is_completed: bool,
+    pub content: String,
+    pub is_completed: bool,
 }
