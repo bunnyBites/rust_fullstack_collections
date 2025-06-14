@@ -1,3 +1,4 @@
+use crate::models::accounts::Task;
 use dioxus::{logger::tracing, prelude::*};
 
 #[component]
@@ -44,7 +45,16 @@ async fn on_ask_ai(provided_pub_key: &str) {
 
     match reqwest::get(get_url).await {
         Ok(response) => {
-            tracing::info!("{:?}", response);
+            if response.status().is_success() {
+                match response.json::<Task>().await {
+                    Ok(response_json) => {
+                        tracing::info!("Prepared response: {:?}", response_json);
+                    }
+                    Err(e) => {
+                        tracing::error!("Response parsing issue: {:?}", e);
+                    }
+                }
+            }
         }
         Err(err) => {
             tracing::error!("Issue: {}", err);

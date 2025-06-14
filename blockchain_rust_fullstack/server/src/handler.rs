@@ -10,14 +10,14 @@ use axum::{
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 
-use crate::model::Task;
+use crate::model::{Task, TaskAPIResponse};
 
 const PROGRAM_ID: &str = "AUEPaukkyUiQVu5YFb76mJU9yfzXzi78qrKQnbK8H3c1";
 
 pub async fn get_todos(
     Path(user_pubkey): Path<String>,
     State(rpc_client): State<Arc<RpcClient>>,
-) -> Result<Json<Task>, impl IntoResponse> {
+) -> Result<Json<TaskAPIResponse>, impl IntoResponse> {
     let user_pk = match Pubkey::from_str(&user_pubkey) {
         Ok(user_public_key) => user_public_key,
         Err(_) => {
@@ -52,7 +52,11 @@ pub async fn get_todos(
     let mut todo_account_data_without_discriminator = &fetched_todo_account_data[8..];
 
     match Task::deserialize(&mut todo_account_data_without_discriminator) {
-        Ok(todo_data) => Ok(Json(todo_data)),
+        Ok(todo_data) => Ok(Json(TaskAPIResponse {
+            user: todo_data.user.to_string(),
+            bump: todo_data.bump,
+            todos: todo_data.todos,
+        })),
         Err(e) => {
             eprintln!("Failed to deserialize: {:?}", e);
 
