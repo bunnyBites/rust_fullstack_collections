@@ -1,7 +1,12 @@
 use std::sync::Arc;
 
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    http::{Method, header},
+    routing::get,
+};
 use solana_client::rpc_client::RpcClient;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::handler::get_todos;
 
@@ -15,9 +20,16 @@ async fn main() {
     // create Rpc client
     let rpc_client = Arc::new(RpcClient::new(SOLANA_BASE_URL));
 
+    // create cors layer
+    let cors_layer = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(vec![Method::GET, Method::POST])
+        .allow_headers(vec![header::CONTENT_TYPE]);
+
     // create routes with rpc clien
     let app = Router::new()
         .route("/sol/{user_pubkey}", get(get_todos))
+        .layer(cors_layer)
         .with_state(rpc_client);
 
     // prepare listener

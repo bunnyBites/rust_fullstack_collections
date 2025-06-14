@@ -4,6 +4,7 @@ use crate::components::todo_container::TodoContainer;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 mod components;
+mod models;
 
 fn main() {
     dioxus::launch(App);

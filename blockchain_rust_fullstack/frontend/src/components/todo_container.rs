@@ -1,4 +1,5 @@
 use dioxus::{logger::tracing, prelude::*};
+use reqwest::Client;
 
 #[component]
 pub fn TodoContainer() -> Element {
@@ -23,7 +24,22 @@ pub fn TodoContainer() -> Element {
               // Button to trigger the fetch operation
               // You'll bind this to your fetch logic in the `onclick` handler
               button {
-                  // onclick: move |_| { /* your async fetch logic here */ },
+                  onclick: move |_| async move {
+                    if user_public_key.read().is_empty() {
+                      tracing::error!("No user public key provided");
+                    }
+
+                    let get_url = format!("http://localhost:3000/sol/{}", user_public_key.read());
+
+                    match reqwest::get(get_url).await {
+                      Ok(response) => {
+                        tracing::info!("{:?}", response);
+                      },
+                      Err(err) => {
+                        tracing::error!("Issue: {}", err);
+                      }
+                    }
+                  },
                   "Fetch To-Do"
               }
           }
