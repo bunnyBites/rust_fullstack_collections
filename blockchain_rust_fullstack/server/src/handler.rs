@@ -41,7 +41,12 @@ pub async fn get_todos(
 
     let (todo_pda, _bump) = Pubkey::find_program_address(&[b"list", user_pk.as_ref()], &program_pk);
 
-    match program_state.account::<Todo>(todo_pda) {
+    let fetched_response =
+        tokio::task::spawn_blocking(move || program_state.account::<Todo>(todo_pda))
+            .await
+            .expect("Failed to get account data");
+
+    match fetched_response {
         Ok(fetched_response) => {
             let api_response = TaskAPIResponse {
                 user: fetched_response.user.to_string(),
