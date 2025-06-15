@@ -19,8 +19,8 @@ use blockchain::Todo;
 type SharedProgram = State<Arc<Program<Arc<Keypair>>>>;
 
 pub async fn get_todos(
-    program_state: SharedProgram,
     Path(user_pubkey): Path<String>,
+    program_state: SharedProgram,
 ) -> Result<Json<TaskAPIResponse>, impl IntoResponse> {
     let user_pk = match Pubkey::from_str(&user_pubkey) {
         Ok(user_public_key) => user_public_key,
