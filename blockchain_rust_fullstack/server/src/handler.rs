@@ -1,22 +1,26 @@
-use std::{str::FromStr, sync::Arc};
-
-use anchor_lang::AnchorDeserialize;
+use anchor_client::{
+    Program,
+    solana_sdk::{pubkey::Pubkey, signature::Keypair},
+};
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
 };
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::pubkey::Pubkey;
+use std::{str::FromStr, sync::Arc};
 
-use crate::model::{Task, TaskAPIResponse};
+use crate::{
+    PROGRAM_ID,
+    model::{TaskAPIResponse, TodoAPIResponse},
+};
+use blockchain::Todo;
 
-const PROGRAM_ID: &str = "AUEPaukkyUiQVu5YFb76mJU9yfzXzi78qrKQnbK8H3c1";
+type SharedProgram = State<Arc<Program<Arc<Keypair>>>>;
 
 pub async fn get_todos(
+    program_state: SharedProgram,
     Path(user_pubkey): Path<String>,
-    State(rpc_client): State<Arc<RpcClient>>,
 ) -> Result<Json<TaskAPIResponse>, impl IntoResponse> {
     let user_pk = match Pubkey::from_str(&user_pubkey) {
         Ok(user_public_key) => user_public_key,
@@ -37,33 +41,23 @@ pub async fn get_todos(
 
     let (todo_pda, _bump) = Pubkey::find_program_address(&[b"list", user_pk.as_ref()], &program_pk);
 
-    let fetched_todo_account_data = match rpc_client.get_account_data(&todo_pda) {
-        Ok(todo_account) => todo_account,
-        Err(_) => return Err((StatusCode::BAD_REQUEST, "Failed to fetch account data")),
-    };
+    match program_state.account::<Todo>(todo_pda) {
+        Ok(fetched_response) => {
+            let api_response = TaskAPIResponse {
+                user: fetched_response.user.to_string(),
+                bump: fetched_response.bump,
+                todos: fetched_response
+                    .todos
+                    .into_iter()
+                    .map(|todo| TodoAPIResponse {
+                        content: todo.content,
+                        is_completed: todo.is_completed,
+                    })
+                    .collect(),
+            };
 
-    if fetched_todo_account_data.len() < 8 {
-        return Err((
-            StatusCode::NOT_ACCEPTABLE,
-            "Fetched account data size is less than required size",
-        ));
-    }
-
-    let mut todo_account_data_without_discriminator = &fetched_todo_account_data[8..];
-
-    match Task::deserialize(&mut todo_account_data_without_discriminator) {
-        Ok(todo_data) => Ok(Json(TaskAPIResponse {
-            user: todo_data.user.to_string(),
-            bump: todo_data.bump,
-            todos: todo_data.todos,
-        })),
-        Err(e) => {
-            eprintln!("Failed to deserialize: {:?}", e);
-
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to Deserialize data",
-            ));
+            Ok(Json(api_response))
         }
+        Err(_) => Err((StatusCode::SERVICE_UNAVAILABLE, "Something went wrong")),
     }
 }

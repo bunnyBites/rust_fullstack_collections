@@ -1,0 +1,12 @@
+# In your ROOT project folder /Cargo.toml
+
+[workspace]
+resolver = "2"
+members = [
+  "blockchain/programs/blockchain", # The path to the on-chain program
+  "server",                         # The path to our Axum backend
+  "frontend",                       # The path to our Dioxus frontend
+]
+
+[workspace.dependencies]
+# Here we can define dependencies shared across the workspace if we want
