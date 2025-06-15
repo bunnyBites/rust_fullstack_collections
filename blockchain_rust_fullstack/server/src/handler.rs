@@ -8,19 +8,20 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use base64::Engine;
 use std::{str::FromStr, sync::Arc};
 
 use crate::{
     PROGRAM_ID,
-    model::{TaskAPIResponse, TodoAPIResponse},
+    model::{CreateContent, CreateContentResponse, TaskAPIResponse, TodoAPIResponse},
 };
-use blockchain::Todo;
+use blockchain::{self, Todo};
 
 type SharedProgram = State<Arc<Program<Arc<Keypair>>>>;
 
 pub async fn get_todos(
+    State(program_state): SharedProgram,
     Path(user_pubkey): Path<String>,
-    program_state: SharedProgram,
 ) -> Result<Json<TaskAPIResponse>, impl IntoResponse> {
     let user_pk = match Pubkey::from_str(&user_pubkey) {
         Ok(user_public_key) => user_public_key,
@@ -65,4 +66,55 @@ pub async fn get_todos(
         }
         Err(_) => Err((StatusCode::SERVICE_UNAVAILABLE, "Something went wrong")),
     }
+}
+
+pub async fn create_content(
+    State(program_state): SharedProgram,
+    Json(payload): Json<CreateContent>,
+) -> Result<Json<CreateContentResponse>, impl IntoResponse> {
+    let user_public_key = match Pubkey::from_str(&payload.user_public_key) {
+        Ok(public_key) => public_key,
+        Err(_) => {
+            return Err((StatusCode::NOT_FOUND, "Provide invalid public key"));
+        }
+    };
+
+    let program_id = match Pubkey::from_str(PROGRAM_ID) {
+        Ok(todo_program_id) => todo_program_id,
+        Err(_) => {
+            return Err((StatusCode::NOT_FOUND, "Provided program id is not allowed"));
+        }
+    };
+
+    let (todo_pda, _bump) =
+        Pubkey::find_program_address(&[b"list", user_public_key.as_ref()], &program_id);
+
+    let unsigned_tx = match program_state
+        .request()
+        .accounts(blockchain::accounts::AddTask {
+            todo: todo_pda,
+            user: user_public_key,
+        })
+        .args(blockchain::instruction::AddTask {
+            content: payload.content,
+        })
+        .transaction()
+    {
+        Ok(tx) => tx,
+        Err(_) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to build transaction",
+            ));
+        }
+    };
+
+    // serialise the transaction
+    let serialized_tx = bincode::serialize(&unsigned_tx).unwrap();
+    let base64_tx = base64::engine::general_purpose::STANDARD.encode(serialized_tx);
+    let prepared_response = CreateContentResponse {
+        transaction: base64_tx,
+    };
+
+    Ok(Json(prepared_response))
 }

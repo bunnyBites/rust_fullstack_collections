@@ -7,11 +7,11 @@ use anchor_client::{
 use axum::{
     Router,
     http::{Method, header},
-    routing::get,
+    routing::{get, post},
 };
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::handler::get_todos;
+use crate::handler::{create_content, get_todos};
 
 mod handler;
 mod model;
@@ -36,9 +36,10 @@ async fn main() {
         .allow_methods(vec![Method::GET, Method::POST])
         .allow_headers(vec![header::CONTENT_TYPE]);
 
-    // create routes with rpc clien
+    // create routes with rpc client
     let app = Router::new()
         .route("/sol/{user_pubkey}", get(get_todos))
+        .route("/sol/create_content", post(create_content))
         .layer(cors_layer)
         .with_state(program_state);
 

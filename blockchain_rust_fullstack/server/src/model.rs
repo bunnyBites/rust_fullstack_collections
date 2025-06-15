@@ -1,5 +1,5 @@
 use anchor_client::anchor_lang::AnchorDeserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(AnchorDeserialize, Serialize, Debug, Clone)]
 pub struct TaskAPIResponse {
@@ -12,4 +12,15 @@ pub struct TaskAPIResponse {
 pub struct TodoAPIResponse {
     pub content: String,
     pub is_completed: bool,
+}
+
+#[derive(Deserialize)]
+pub struct CreateContent {
+    pub user_public_key: String,
+    pub content: String,
+}
+
+#[derive(Serialize)]
+pub struct CreateContentResponse {
+    pub transaction: String,
 }
